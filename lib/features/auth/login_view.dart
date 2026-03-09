@@ -17,8 +17,8 @@ class _LoginViewState extends State<LoginView> {
   int _secondsLeft = 0;
 
   void _handleLogin() {
-    String user = _userController.text;
-    String pass = _passController.text;
+    String user = _userController.text.toLowerCase().trim();
+    String pass = _passController.text.trim();
 
     // Security Logic: Validasi field tidak boleh kosong
     if (user.isEmpty || pass.isEmpty) {
@@ -30,20 +30,55 @@ class _LoginViewState extends State<LoginView> {
       return;
     }
 
-    if (_controller.login(user, pass)) {
+    // Siapkan wadah untuk data user
+    Map<String, dynamic>? loggedInUser;
+
+    // --- DAFTAR 3 AKUN PASTI BUAT NGETES ---
+    if (user == 'ketua' && pass == '123') {
+      loggedInUser = {
+        'uid': 'user_001',
+        'username': 'Bapak Ketua',
+        'role': 'Ketua',
+        'teamId': 'Tim_A',
+      };
+    } else if (user == 'anggota1' && pass == '123') {
+      loggedInUser = {
+        'uid': 'user_002',
+        'username': 'Anggota Satu',
+        'role': 'Anggota',
+        'teamId': 'Tim_A',
+      };
+    } else if (user == 'anggota2' && pass == '123') {
+      loggedInUser = {
+        'uid': 'user_003',
+        'username': 'Anggota Dua',
+        'role': 'Anggota',
+        'teamId': 'Tim_A',
+      };
+    }
+
+    // Jika ketikan cocok dengan salah satu akun di atas
+    if (loggedInUser != null) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => LogView(username: user)),
+        MaterialPageRoute(
+          builder: (context) => LogView(currentUser: loggedInUser!),
+        ),
       );
     } else {
+      // Jika akun tidak ada, jalankan sistem keamanan dari LoginController
+      _controller.login(user, pass); // Memicu hitungan gagal
+
       if (_controller.isLocked) _startLockdown();
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             _controller.isLocked
                 ? "Terlalu banyak percobaan! Tunggu 10 detik."
-                : "Login Gagal! Akun tidak ditemukan.",
+                : "Login Gagal! Akun tidak ditemukan atau password salah.",
           ),
+          backgroundColor: Colors.red,
         ),
       );
     }
@@ -94,6 +129,13 @@ class _LoginViewState extends State<LoginView> {
                 _secondsLeft > 0 ? "Terkunci ($_secondsLeft s)" : "Masuk",
               ),
             ),
+            const SizedBox(height: 30),
+            // Catatan kecil di layar biar kamu nggak lupa akunnya
+            const Text(
+              "Akun Testing:\n1. ketua (pass: 123)\n2. anggota1 (pass: 123)\n3. anggota2 (pass: 123)",
+              style: TextStyle(color: Colors.grey, fontSize: 12),
+              textAlign: TextAlign.center,
+            )
           ],
         ),
       ),

@@ -1,13 +1,26 @@
 import 'package:flutter/material.dart';
-// Alamat import sudah diarahkan ke folder onboarding yang baru
-import 'package:logbook_app_015/features/onboarding/onboarding_view.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:hive_flutter/hive_flutter.dart'; // Import Hive Flutter
+// Pastikan path import model ini sesuai dengan struktur folder kamu ya!
+import 'package:logbook_app_015/features/logbook/models/log_model.dart';
+import 'package:logbook_app_015/features/logbook/models/log_model.dart';
+import 'package:logbook_app_015/features/auth/login_view.dart';
+import 'package:logbook_app_015/features/onboarding/onboarding_view.dart';
 
 void main() async {
   // Wajib untuk operasi asinkron sebelum runApp
   WidgetsFlutterBinding.ensureInitialized();
+
   // Load ENV
   await dotenv.load(fileName: ".env");
+
+  // --- INISIALISASI HIVE ---
+  await Hive.initFlutter();
+  Hive.registerAdapter(
+      LogModelAdapter()); // Mendaftarkan adapter yang tadi dibuat otomatis
+  await Hive.openBox<LogModel>(
+      'offline_logs'); // Membuka "kotak" penyimpanan lokal
+
   runApp(const MyApp());
 }
 
