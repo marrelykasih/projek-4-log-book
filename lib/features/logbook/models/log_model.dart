@@ -1,5 +1,6 @@
 import 'package:hive/hive.dart';
 import 'package:mongo_dart/mongo_dart.dart' show ObjectId;
+
 part 'log_model.g.dart';
 
 @HiveType(typeId: 0)
@@ -22,8 +23,12 @@ class LogModel {
   @HiveField(5)
   final String teamId;
 
+  // --- FITUR BARU KITA MASUKIN LAGI DI SINI ---
   @HiveField(6)
-  final String category; // Fitur andalanmu kembali!
+  final String category;
+
+  @HiveField(7)
+  final bool isPublic;
 
   LogModel({
     this.id,
@@ -32,7 +37,8 @@ class LogModel {
     required this.date,
     required this.authorId,
     required this.teamId,
-    required this.category,
+    this.category = 'Pribadi', // Nilai default biar gak error
+    this.isPublic = true, // Nilai default
   });
 
   Map<String, dynamic> toMap() => {
@@ -43,6 +49,7 @@ class LogModel {
         'authorId': authorId,
         'teamId': teamId,
         'category': category,
+        'isPublic': isPublic,
       };
 
   factory LogModel.fromMap(Map<String, dynamic> map) {
@@ -54,6 +61,7 @@ class LogModel {
       authorId: map['authorId'] ?? 'unknown_user',
       teamId: map['teamId'] ?? 'no_team',
       category: map['category'] ?? 'Pribadi',
+      isPublic: map['isPublic'] ?? true,
     );
   }
 }

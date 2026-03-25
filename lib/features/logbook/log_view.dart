@@ -5,7 +5,7 @@ import 'package:logbook_app_015/features/logbook/models/log_model.dart';
 import 'package:logbook_app_015/services/access_control_service.dart';
 import 'package:logbook_app_015/features/logbook/log_editor_page.dart';
 import 'package:logbook_app_015/services/mongo_service.dart';
-import 'package:logbook_app_015/features/auth/login_view.dart'; // Wajib buat navigasi Log Out
+import 'package:logbook_app_015/features/auth/login_view.dart';
 
 class LogView extends StatefulWidget {
   final Map<String, dynamic> currentUser;
@@ -89,15 +89,16 @@ class _LogViewState extends State<LogView> {
     }
   }
 
+  // --- FITUR KATEGORI: Bikin warna kartu beda-beda ---
   Color _getCategoryColor(String category) {
     switch (category) {
       case 'Pekerjaan':
         return Colors.blue.shade100;
       case 'Urgent':
-        return Colors.indigo.shade100;
+        return Colors.red.shade100;
       case 'Pribadi':
       default:
-        return Colors.lightBlue.shade50;
+        return Colors.green.shade50;
     }
   }
 
@@ -109,8 +110,7 @@ class _LogViewState extends State<LogView> {
           log: log,
           index: index,
           controller: _controller,
-          currentUserId: widget.currentUser['uid'],
-          currentTeamId: widget.currentUser['teamId'],
+          currentUser: widget.currentUser,
         ),
       ),
     );
@@ -126,7 +126,6 @@ class _LogViewState extends State<LogView> {
         backgroundColor: Colors.blue.shade800,
         foregroundColor: Colors.white,
         elevation: 0,
-        // --- INI DIA TOMBOL LOG OUT-NYA ---
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -151,8 +150,7 @@ class _LogViewState extends State<LogView> {
                           backgroundColor: Colors.red.shade600,
                           foregroundColor: Colors.white),
                       onPressed: () {
-                        Navigator.pop(context); // Tutup dialog
-                        // Navigasi hapus memori halaman dan balik ke Login
+                        Navigator.pop(context);
                         Navigator.pushAndRemoveUntil(
                           context,
                           MaterialPageRoute(
@@ -195,9 +193,18 @@ class _LogViewState extends State<LogView> {
             child: ValueListenableBuilder<List<LogModel>>(
               valueListenable: _controller.logsNotifier,
               builder: (context, currentLogs, child) {
+                // --- FITUR FILTER PUBLIC/PRIVATE & SEARCH ---
                 final filteredLogs = currentLogs.where((log) {
-                  return log.title.toLowerCase().contains(_searchQuery) ||
-                      log.description.toLowerCase().contains(_searchQuery);
+                  final matchesSearch =
+                      log.title.toLowerCase().contains(_searchQuery) ||
+                          log.description.toLowerCase().contains(_searchQuery);
+
+                  final isOwner = log.authorId == widget.currentUser['uid'];
+
+                  // Tampilkan jika: Milik sendiri ATAU (Milik orang lain tapi Public)
+                  final isVisible = isOwner || log.isPublic;
+
+                  return matchesSearch && isVisible;
                 }).toList();
 
                 if (_isLoading && currentLogs.isEmpty) {
@@ -253,6 +260,7 @@ class _LogViewState extends State<LogView> {
                         margin: const EdgeInsets.symmetric(vertical: 6),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(15)),
+                        // Warna card menyesuaikan Kategori
                         color: _getCategoryColor(log.category),
                         child: InkWell(
                           borderRadius: BorderRadius.circular(15),
@@ -304,11 +312,26 @@ class _LogViewState extends State<LogView> {
                                                   fontStyle: FontStyle.italic)),
                                         ],
                                       ),
-                                      Text(log.category,
-                                          style: TextStyle(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.blue.shade900)),
+                                      // Label Kategori & Privasi
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            log.isPublic
+                                                ? Icons.public
+                                                : Icons.lock,
+                                            size: 12,
+                                            color: log.isPublic
+                                                ? Colors.green.shade700
+                                                : Colors.red.shade700,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(log.category,
+                                              style: TextStyle(
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.blue.shade900)),
+                                        ],
+                                      ),
                                     ],
                                   ),
                                 ],

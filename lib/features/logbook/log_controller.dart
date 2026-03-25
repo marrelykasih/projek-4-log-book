@@ -12,7 +12,7 @@ class LogController {
   // Membuka koneksi ke memori lokal Hive
   final Box<LogModel> _myBox = Hive.box<LogModel>('offline_logs');
 
-  // 1. LOAD DATA: Ambil lokal dulu, baru tarik dari Cloud
+  // 1. LOAD DATA
   Future<void> loadLogs(String teamId) async {
     logsNotifier.value = _myBox.values.toList(); // Instan dari HP
 
@@ -29,24 +29,25 @@ class LogController {
     }
   }
 
-  // 2. ADD DATA: Simpan lokal, lalu lempar ke Cloud
-  Future<void> addLog(String title, String desc, String category,
+  // 2. ADD DATA: Sekarang nerima category & isPublic!
+  Future<void> addLog(String title, String desc, String category, bool isPublic,
       String authorId, String teamId) async {
     final newLog = LogModel(
-      id: ObjectId().oid, // String ID untuk Hive
+      id: ObjectId().oid,
       title: title,
       description: desc,
-      category: category,
       date: DateTime.now().toIso8601String(),
       authorId: authorId,
       teamId: teamId,
+      category: category, // Fitur kategori masuk
+      isPublic: isPublic, // Fitur public/private masuk
     );
 
-    await _myBox.add(newLog); // Simpan Instan ke Hive
+    await _myBox.add(newLog);
     logsNotifier.value = _myBox.values.toList();
 
     try {
-      await MongoService().insertLog(newLog); // Background upload
+      await MongoService().insertLog(newLog);
     } catch (e) {
       await LogHelper.writeLog(
           "WARNING: Data tersimpan lokal, akan sinkron saat online",
@@ -54,17 +55,18 @@ class LogController {
     }
   }
 
-  // 3. UPDATE DATA
+  // 3. UPDATE DATA: Sekarang nerima category & isPublic!
   Future<void> updateLog(int index, String title, String desc, String category,
-      String authorId, String teamId, String existingId) async {
+      bool isPublic, String authorId, String teamId, String existingId) async {
     final updatedLog = LogModel(
       id: existingId,
       title: title,
       description: desc,
-      category: category,
       date: DateTime.now().toIso8601String(),
       authorId: authorId,
       teamId: teamId,
+      category: category, // Fitur kategori update
+      isPublic: isPublic, // Fitur public/private update
     );
 
     await _myBox.putAt(index, updatedLog);

@@ -7,17 +7,14 @@ class LogEditorPage extends StatefulWidget {
   final LogModel? log;
   final int? index;
   final LogController controller;
-  // Untuk sementara kita pakai String biasa dulu buat simulasi identitas
-  final String currentUserId;
-  final String currentTeamId;
+  final dynamic currentUser;
 
   const LogEditorPage({
     super.key,
     this.log,
     this.index,
     required this.controller,
-    required this.currentUserId,
-    required this.currentTeamId,
+    required this.currentUser,
   });
 
   @override
@@ -27,8 +24,10 @@ class LogEditorPage extends StatefulWidget {
 class _LogEditorPageState extends State<LogEditorPage> {
   late TextEditingController _titleController;
   late TextEditingController _descController;
-  // Tambahan variabel untuk kategori yang tadi kita selamatkan
+
+  // Variabel baru buat Fitur Kategori & Public/Private
   String _selectedCategory = 'Pribadi';
+  bool _isPublic = true;
   final List<String> _categories = ['Pekerjaan', 'Pribadi', 'Urgent'];
 
   @override
@@ -37,11 +36,14 @@ class _LogEditorPageState extends State<LogEditorPage> {
     _titleController = TextEditingController(text: widget.log?.title ?? '');
     _descController =
         TextEditingController(text: widget.log?.description ?? '');
+
+    // Kalau lagi edit catatan lama, ambil data lama
     if (widget.log != null) {
       _selectedCategory = widget.log!.category;
+      _isPublic = widget.log!.isPublic;
     }
 
-    // Listener agar Pratinjau terupdate otomatis saat kita ngetik
+    // Listener agar Pratinjau terupdate otomatis
     _descController.addListener(() {
       setState(() {});
     });
@@ -50,28 +52,30 @@ class _LogEditorPageState extends State<LogEditorPage> {
   void _save() {
     if (widget.log == null) {
       widget.controller.addLog(
-          _titleController.text,
-          _descController.text,
-          _selectedCategory,
-          widget.currentUserId,
-          widget.currentTeamId // Kirim identitas pembuat
-          );
+        _titleController.text,
+        _descController.text,
+        _selectedCategory, // Kirim kategori
+        _isPublic, // Kirim status public
+        widget.currentUser['uid'],
+        widget.currentUser['teamId'],
+      );
     } else {
       widget.controller.updateLog(
-          widget.index!,
-          _titleController.text,
-          _descController.text,
-          _selectedCategory,
-          widget.log!.authorId,
-          widget.log!.teamId,
-          widget.log!.id!);
+        widget.index!,
+        _titleController.text,
+        _descController.text,
+        _selectedCategory, // Kirim kategori
+        _isPublic, // Kirim status public
+        widget.log!.authorId,
+        widget.log!.teamId,
+        widget.log!.id!,
+      );
     }
     Navigator.pop(context);
   }
 
   @override
   void dispose() {
-    // Bersihkan memori HP saat halaman ditutup
     _titleController.dispose();
     _descController.dispose();
     super.dispose();
@@ -79,7 +83,6 @@ class _LogEditorPageState extends State<LogEditorPage> {
 
   @override
   Widget build(BuildContext context) {
-    // DefaultTabController buat bikin 2 Tab (Editor & Pratinjau)
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -105,6 +108,8 @@ class _LogEditorPageState extends State<LogEditorPage> {
                     decoration: const InputDecoration(labelText: "Judul"),
                   ),
                   const SizedBox(height: 10),
+
+                  // --- UI FITUR KATEGORI ---
                   DropdownButtonFormField<String>(
                     value: _selectedCategory,
                     items: _categories
@@ -113,13 +118,33 @@ class _LogEditorPageState extends State<LogEditorPage> {
                         .toList(),
                     onChanged: (newValue) =>
                         setState(() => _selectedCategory = newValue!),
-                    decoration: const InputDecoration(labelText: 'Kategori'),
+                    decoration: const InputDecoration(
+                        labelText: 'Kategori', border: OutlineInputBorder()),
                   ),
                   const SizedBox(height: 10),
+
+                  // --- UI FITUR PUBLIC/PRIVATE ---
+                  SwitchListTile(
+                    title: const Text("Bagikan ke Tim (Public)",
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text(_isPublic
+                        ? "Teman setim bisa melihat catatan ini"
+                        : "Hanya Anda yang bisa melihat catatan ini"),
+                    value: _isPublic,
+                    activeColor: Colors.blue.shade800,
+                    contentPadding: EdgeInsets.zero,
+                    onChanged: (bool value) {
+                      setState(() {
+                        _isPublic = value;
+                      });
+                    },
+                  ),
+                  const Divider(),
+
                   Expanded(
                     child: TextField(
                       controller: _descController,
-                      maxLines: null, // Biar bisa ngetik panjang ke bawah
+                      maxLines: null,
                       expands: true,
                       keyboardType: TextInputType.multiline,
                       decoration: const InputDecoration(
@@ -135,7 +160,6 @@ class _LogEditorPageState extends State<LogEditorPage> {
             // --- TAB 2: AREA LIHAT HASIL (PRATINJAU) ---
             Padding(
               padding: const EdgeInsets.all(16.0),
-              // Widget MarkdownBody ini yang bakal nyulap kode jadi teks rapi!
               child: MarkdownBody(data: _descController.text),
             ),
           ],
