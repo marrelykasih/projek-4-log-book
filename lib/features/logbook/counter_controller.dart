@@ -15,14 +15,14 @@ class CounterController {
   Future<void> increment(String username) async {
     final prefs = await SharedPreferences.getInstance();
     value++;
-    _saveToStorage(username, "menambah");
+    await _saveToStorage(username, "menambah"); // <-- await sudah ditambahkan
   }
 
   // LOGIKA KURANG (Decrement) - Baru!
   Future<void> decrement(String username) async {
     final prefs = await SharedPreferences.getInstance();
     value--;
-    _saveToStorage(username, "mengurangi");
+    await _saveToStorage(username, "mengurangi"); // <-- await sudah ditambahkan
   }
 
   // Fungsi Simpan (Biar gak nulis ulang kodingan)
